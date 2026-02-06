@@ -12,4 +12,4 @@ engine = create_engine(
 # 3. ตัวสร้าง Session
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-Base = declarative_base()
+Base = declarative_base() 

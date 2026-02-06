@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from sqlalchemy.orm import Session
 from .models import Task, TaskCreate
-from . import models_orm
+
 
 class ITaskRepository(ABC):
+
     @abstractmethod
     def get_all(self) -> List[Task]:
         pass
@@ -12,15 +12,23 @@ class ITaskRepository(ABC):
     @abstractmethod
     def create(self, task: TaskCreate) -> Task:
         pass
-        
+
     @abstractmethod
     def get_by_id(self, task_id: int) -> Optional[Task]:
         pass
 
     @abstractmethod
-    def update(self, task_id: int) -> Optional[Task]: # แก้ไข: ใส่ : และตั้งชื่อให้กลางๆ
+    def update(self, task: Task) -> Task:
         pass
 
+    @abstractmethod
+    def get_by_title(self, title: str) -> Optional[Task]:
+        pass
+
+
+# ==========================
+# In-Memory Repository
+# ==========================
 class InMemoryTaskRepository(ITaskRepository):
     def __init__(self):
         self.tasks = []
@@ -41,11 +49,25 @@ class InMemoryTaskRepository(ITaskRepository):
                 return task
         return None
 
-    def update(self, task_id: int) -> Optional[Task]: # เพิ่มให้ครบตาม Interface
-        task = self.get_by_id(task_id)
-        if task:
-            task.completed = True # สมมติว่าเป็นการ update สถานะ
-        return task
+    def update(self, task: Task) -> Task:
+        for i, t in enumerate(self.tasks):
+            if t.id == task.id:
+                self.tasks[i] = task
+                return task
+        return None
+
+    def get_by_title(self, title: str) -> Optional[Task]:
+        for task in self.tasks:
+            if task.title == title:
+                return task
+        return None
+
+
+# ==========================
+# SQL Repository
+# ==========================
+from sqlalchemy.orm import Session
+from . import models_orm
 
 class SqlTaskRepository(ITaskRepository):
     def __init__(self, db: Session):
@@ -60,14 +82,15 @@ class SqlTaskRepository(ITaskRepository):
         self.db.commit()
         self.db.refresh(db_task)
         return db_task
-    
-    def update(self, task_id: int) -> Optional[Task]: # แก้ไข: ชื่อต้องตรงกับ ITaskRepository
-        db_task = self.get_by_id(task_id)
-        if db_task:
-            db_task.completed = True
-            self.db.commit()
-            self.db.refresh(db_task)
-        return db_task
 
-    def get_by_id(self, task_id: int) -> Optional[Task]: # แก้ไข: ชื่อตัวแปร และใส่ .first()
+    def get_by_id(self, task_id: int):
         return self.db.query(models_orm.Task).filter(models_orm.Task.id == task_id).first()
+
+    def update(self, task):
+        self.db.commit()
+        self.db.refresh(task)
+        return task
+
+    # ✅ เพิ่ม
+    def get_by_title(self, title: str):
+        return self.db.query(models_orm.Task).filter(models_orm.Task.title == title).first()
