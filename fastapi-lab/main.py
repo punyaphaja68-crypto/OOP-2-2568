@@ -1,5 +1,5 @@
 def main():
-    print("Hello from oop682-1!")
+    print("Hello from fastapi-lab!")
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 [project]
-name = "oop682"
+name = "fastapi-lab"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
