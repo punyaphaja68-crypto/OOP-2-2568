@@ -60,15 +60,18 @@ class HomingBullet(GameObject):
         super().__init__(x, y, path, (15, 15))
         self.target = target
         self.speed = 3.5
-        self.damage = 15 # แก้จาก 20 เป็น 15
+        self.damage = 15 # ปรับจาก 20 เป็น 15 ตามที่ Miguel ต้องการ
 
     def update(self):
+        # ระบบล็อกเป้า (Homing logic)
         dx = self.target.rect.centerx - self.rect.centerx
         dy = self.target.rect.centery - self.rect.centery
         dist = math.hypot(dx, dy)
         if dist != 0:
             self.rect.x += (dx / dist) * self.speed
             self.rect.y += (dy / dist) * self.speed
+        
+        # ลบกระสุนเมื่อออกนอกจอ
         if self.rect.top > HEIGHT or self.rect.bottom < 0 or self.rect.left > WIDTH or self.rect.right < 0: 
             self.kill()
 
@@ -345,7 +348,7 @@ class GameEngine:
                 if random.random() < 0.008:
                     r = random.random()
                     if r < 0.1: item = Pill("gold", "shield_gold", os.path.join("PNG", "Power-ups", "shield_gold.png"))
-                    elif r < 0.2: item = Pill("gold", "speed", os.path.join("PNG", "Power-ups", "bolt_gold.png"))
+                    elif r < 0.2: item = Pill("blue", "speed", os.path.join("PNG", "Power-ups", "bolt_gold.png"))
                     elif r < 0.4: item = Pill("bronze", "star_bronze", os.path.join("PNG", "Power-ups", "star_bronze.png"))
                     elif r < 0.5: item = Pill("silver", "star_silver", os.path.join("PNG", "Power-ups", "star_silver.png"))
                     elif r < 0.6: item = Pill("gold", "star_gold", os.path.join("PNG", "Power-ups", "star_gold.png"))
@@ -381,33 +384,21 @@ class GameEngine:
                     elif "star_" in p.item_type: self.player.add_star(p.item_type.split("_")[1])
                     elif p.color == "green": self.player.health = min(100, self.player.health + 20)
 
-               # --- ส่วนควบคุมการรับดาเมจและการชน (Collision Logic) ---
-                # เช็คว่าพ้นช่วงอมตะตอนเกิด (3 วินาที) และไม่ได้กางเกราะทองอยู่
+                # --- ส่วนควบคุมการรับดาเมจและการชน (Collision Logic) ที่แก้ไขใหม่ ---
                 if now - self.player.spawn_time > 3000 and not self.player.shield_gold_active:
                     
-                    # 1. รับดาเมจจากกระสุนศัตรู (รวมกระสุนบอสที่ Miguel แก้เป็น 15 ไว้ด้วย)
-                    for b in pygame.sprite.spritecollide(self.player, self.e_bullets, True, pygame.sprite.collide_mask):
-                        self.player.health -= b.damage
-                    
-                    # 2. ชนอุกกาบาต (แยกตามขนาด)
-                    meteor_hits = pygame.sprite.spritecollide(self.player, self.meteors, False, pygame.sprite.collide_mask)
-                    for m in meteor_hits:
-                        if "tiny1" in m.size_tag:
-                            pass  # ก้อนจิ๋ว: ลอยผ่าน ไม่ได้รับดาเมจ
-                        elif "small1" in m.size_tag:
-                            self.player.health -= 5  # ก้อนเล็ก: ลด 5 HP
-                            m.kill() 
-                        else:
-                            # ก้อนกลางหรือใหญ่: Game Over ทันที
-                            if self.sfx['lose']: self.sfx['lose'].play()
-                            running = False
+                    # 1. โดนกระสุนศัตรูทุกชนิด (Normal + Homing)
+                    enemy_bullet_hits = pygame.sprite.spritecollide(self.player, self.e_bullets, True, pygame.sprite.collide_mask)
+                    for b in enemy_bullet_hits:
+                        self.player.health -= b.damage # ดาเมจตามที่ตั้งไว้ (Homing=15, Normal=5-10)
 
-                    # 3. ชนยานศัตรู (ลด 20 HP)
+
+                    # 3. ชนตัวยานศัตรูโดยตรง
                     enemy_hits = pygame.sprite.spritecollide(self.player, self.enemies, True, pygame.sprite.collide_mask)
                     for e in enemy_hits:
-                        self.player.health -= 20  # ยานชนกัน ลด 20 HP
+                        self.player.health -= 20 # ชนยานลด 20 HP
 
-                    # 4. เช็คเลือดหมด
+                    # 4. เช็คความตาย
                     if self.player.health <= 0:
                         if self.sfx['lose']: self.sfx['lose'].play()
                         running = False
@@ -416,11 +407,11 @@ class GameEngine:
                     # --- ส่วนที่แก้ไขใหม่: เช็ค Meteor รายตัว ---
                     meteor_hits = pygame.sprite.spritecollide(self.player, self.meteors, False, pygame.sprite.collide_mask)
                     for m in meteor_hits:
-                        if "tiny1" in m.size_tag:
+                        if "tiny2" in m.size_tag or "tiny1" in m.size_tag:
                             pass # tiny โดนแล้วไม่เป็นไรเลย ชิลล์ๆ
-                        elif "small1" in m.size_tag:
-                            self.player.health -= 5 # small ลด 5 HP
-                            m.kill() # ชนแล้วให้ก้อนหินหายไปด้วย จะได้ไม่โดนซ้ำ
+                        elif "small2" in m.size_tag or "small1" in m.size_tag:
+                            self.player.health -= 1 # small ลด 1 HP
+                            pass # ชนแล้วให้ก้อนหินหายไปด้วย จะได้ไม่โดนซ้ำ
                         else:
                             # ขนาด med หรือ big ชนแล้ว Game Over เหมือนเดิม
                             if self.sfx['lose']: self.sfx['lose'].play()
