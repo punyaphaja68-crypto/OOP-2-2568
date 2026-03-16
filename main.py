@@ -348,7 +348,7 @@ class GameEngine:
                 if random.random() < 0.008:
                     r = random.random()
                     if r < 0.1: item = Pill("gold", "shield_gold", os.path.join("PNG", "Power-ups", "shield_gold.png"))
-                    elif r < 0.2: item = Pill("blue", "speed", os.path.join(1"PNG", "Power-ups", "bolt_gold.png"))
+                    elif r < 0.2: item = Pill("blue", "speed", os.path.join("PNG", "Power-ups", "bolt_gold.png"))
                     elif r < 0.4: item = Pill("bronze", "star_bronze", os.path.join("PNG", "Power-ups", "star_bronze.png"))
                     elif r < 0.5: item = Pill("silver", "star_silver", os.path.join("PNG", "Power-ups", "star_silver.png"))
                     elif r < 0.6: item = Pill("gold", "star_gold", os.path.join("PNG", "Power-ups", "star_gold.png"))
@@ -358,8 +358,8 @@ class GameEngine:
                         item.rect.x = random.randint(50, WIDTH-50)
                         collision = pygame.sprite.spritecollideany(item, self.meteors)
                         attempts += 1
-                    self.pills.add(item); self.all_sprites.add(item)
 
+                self.pills.add(item); self.all_sprites.add(item)
                 self.player.update(self.score)
                 self.enemies.update(self.e_bullets, self.all_sprites)
                 self.meteors.update(); self.pills.update(); self.p_bullets.update(); self.e_bullets.update()
